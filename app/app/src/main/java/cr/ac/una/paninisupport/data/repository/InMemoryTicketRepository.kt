@@ -57,6 +57,28 @@ class InMemoryTicketRepository(
         return newTicket
     }
 
+    override fun updateTicketStatus(ticketId: String, status: TicketStatus): Ticket? {
+        val updated = replaceTicket(ticketId) { it.copy(status = status) } ?: return null
+        _events.tryEmit(TicketEvent.TicketStatusUpdated(ticketId))
+        return updated
+    }
+
+    override fun updateTicketPriority(ticketId: String, priority: TicketPriority): Ticket? {
+        val updated = replaceTicket(ticketId) { it.copy(priority = priority) } ?: return null
+        _events.tryEmit(TicketEvent.TicketPriorityUpdated(ticketId))
+        return updated
+    }
+
+    private fun replaceTicket(ticketId: String, transform: (Ticket) -> Ticket): Ticket? {
+        val current = _tickets.value
+        val index = current.indexOfFirst { it.id == ticketId }
+        if (index < 0) return null
+        val updated = transform(current[index])
+        val newList = current.toMutableList().also { it[index] = updated }
+        _tickets.value = sortByPriority(newList)
+        return updated
+    }
+
     private fun nextTicketId(current: List<Ticket>): String {
         val maxNumber = current
             .mapNotNull { it.id.removePrefix("TCK-").toIntOrNull() }

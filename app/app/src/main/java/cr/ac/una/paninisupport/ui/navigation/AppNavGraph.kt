@@ -90,6 +90,8 @@ fun AppNavGraph(appContainer: AppContainer) {
 
             TicketDetailScreen(
                 uiState = uiState,
+                onStatusSelected = ticketDetailViewModel::onStatusSelected,
+                onPrioritySelected = ticketDetailViewModel::onPrioritySelected,
                 onBack = { navController.popBackStack() }
             )
         }

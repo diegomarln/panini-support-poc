@@ -1,6 +1,8 @@
 package cr.ac.una.paninisupport.ui.tickets.detail
 
 import androidx.lifecycle.ViewModel
+import cr.ac.una.paninisupport.domain.model.TicketPriority
+import cr.ac.una.paninisupport.domain.model.TicketStatus
 import cr.ac.una.paninisupport.domain.repository.TicketRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,5 +36,41 @@ class TicketDetailViewModel(
                 )
             }
         }
+    }
+
+    fun onStatusSelected(status: TicketStatus) {
+        val ticketId = _uiState.value.ticket?.id
+        if (ticketId == null) {
+            _uiState.update {
+                it.copy(errorMessage = "No hay un ticket cargado para actualizar.")
+            }
+            return
+        }
+        val updated = ticketRepository.updateTicketStatus(ticketId, status)
+        if (updated == null) {
+            _uiState.update {
+                it.copy(errorMessage = "No se pudo actualizar el estado del ticket.")
+            }
+            return
+        }
+        _uiState.update { it.copy(ticket = updated, errorMessage = null) }
+    }
+
+    fun onPrioritySelected(priority: TicketPriority) {
+        val ticketId = _uiState.value.ticket?.id
+        if (ticketId == null) {
+            _uiState.update {
+                it.copy(errorMessage = "No hay un ticket cargado para actualizar.")
+            }
+            return
+        }
+        val updated = ticketRepository.updateTicketPriority(ticketId, priority)
+        if (updated == null) {
+            _uiState.update {
+                it.copy(errorMessage = "No se pudo actualizar la prioridad del ticket.")
+            }
+            return
+        }
+        _uiState.update { it.copy(ticket = updated, errorMessage = null) }
     }
 }

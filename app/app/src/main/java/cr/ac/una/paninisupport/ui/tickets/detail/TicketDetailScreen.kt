@@ -1,8 +1,10 @@
 package cr.ac.una.paninisupport.ui.tickets.detail
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -20,10 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cr.ac.una.paninisupport.domain.model.Ticket
+import cr.ac.una.paninisupport.domain.model.TicketPriority
+import cr.ac.una.paninisupport.domain.model.TicketStatus
 
 @Composable
 fun TicketDetailScreen(
     uiState: TicketDetailUiState,
+    onStatusSelected: (TicketStatus) -> Unit,
+    onPrioritySelected: (TicketPriority) -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -53,15 +61,20 @@ fun TicketDetailScreen(
                             CircularProgressIndicator()
                         }
                     }
+                    uiState.ticket != null -> {
+                        TicketDetailContent(
+                            ticket = uiState.ticket,
+                            errorMessage = uiState.errorMessage,
+                            onStatusSelected = onStatusSelected,
+                            onPrioritySelected = onPrioritySelected
+                        )
+                    }
                     uiState.errorMessage != null -> {
                         Text(
                             text = uiState.errorMessage,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium
                         )
-                    }
-                    uiState.ticket != null -> {
-                        TicketDetailContent(ticket = uiState.ticket)
                     }
                 }
             }
@@ -78,7 +91,12 @@ fun TicketDetailScreen(
 }
 
 @Composable
-private fun TicketDetailContent(ticket: Ticket) {
+private fun TicketDetailContent(
+    ticket: Ticket,
+    errorMessage: String?,
+    onStatusSelected: (TicketStatus) -> Unit,
+    onPrioritySelected: (TicketPriority) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -98,14 +116,6 @@ private fun TicketDetailContent(ticket: Ticket) {
             style = MaterialTheme.typography.bodySmall
         )
         Text(
-            text = "Prioridad: ${ticket.priority.label}",
-            style = MaterialTheme.typography.bodySmall
-        )
-        Text(
-            text = "Estado: ${ticket.status.label}",
-            style = MaterialTheme.typography.bodySmall
-        )
-        Text(
             text = "Proveedor: ${ticket.supplier}",
             style = MaterialTheme.typography.bodySmall
         )
@@ -113,6 +123,35 @@ private fun TicketDetailContent(ticket: Ticket) {
             text = "Creado: ${ticket.createdAt}",
             style = MaterialTheme.typography.bodySmall
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Estado actual: ${ticket.status.label}",
+            style = MaterialTheme.typography.titleSmall
+        )
+        StatusChipsRow(
+            selected = ticket.status,
+            onSelect = onStatusSelected
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Prioridad actual: ${ticket.priority.label}",
+            style = MaterialTheme.typography.titleSmall
+        )
+        PriorityChipsRow(
+            selected = ticket.priority,
+            onSelect = onPrioritySelected
+        )
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Descripción",
@@ -122,5 +161,49 @@ private fun TicketDetailContent(ticket: Ticket) {
             text = ticket.description,
             style = MaterialTheme.typography.bodyMedium
         )
+    }
+}
+
+@Composable
+private fun StatusChipsRow(
+    selected: TicketStatus,
+    onSelect: (TicketStatus) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TicketStatus.values().forEach { status ->
+            FilterChip(
+                selected = selected == status,
+                onClick = { onSelect(status) },
+                label = { Text(text = status.label) },
+                colors = FilterChipDefaults.filterChipColors()
+            )
+        }
+    }
+}
+
+@Composable
+private fun PriorityChipsRow(
+    selected: TicketPriority,
+    onSelect: (TicketPriority) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TicketPriority.values().forEach { priority ->
+            FilterChip(
+                selected = selected == priority,
+                onClick = { onSelect(priority) },
+                label = { Text(text = priority.label) },
+                colors = FilterChipDefaults.filterChipColors()
+            )
+        }
     }
 }
