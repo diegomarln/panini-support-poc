@@ -1,45 +1,84 @@
 # Feature Flags - Panini Support PoC
 
-La solución móvil incluye un conjunto pequeño de feature flags que permiten
-al equipo técnico de Panini activar o desactivar capacidades concretas del
-flujo de soporte interno sin tener que reescribir múltiples pantallas. Este
-documento describe los flags previstos, su alcance actual y su evolución
-prevista para futuras fases del producto.
+## 1. Propósito
+Los Feature Flags permiten al equipo técnico de Panini activar o
+desactivar capacidades concretas del flujo de soporte interno sin
+reescribir múltiples pantallas y sin reconstruir la aplicación. Son un
+mecanismo de control operativo de bajo costo para ajustar el
+comportamiento durante la validación interna de la solución móvil.
 
-## Flags definidos
-- `ticketCreationEnabled`: controla la creación de tickets de soporte.
-  Cuando está desactivado, las acciones de creación quedan ocultas o
-  bloqueadas en la UI. Es útil cuando Panini necesita congelar el ingreso
-  de nuevos casos durante una ventana operativa específica.
-- `ticketPriorityUpdateEnabled`: controla el cambio de prioridad de un
-  ticket existente. Permite habilitar la repriorización solo cuando el
-  equipo interno está listo para gestionarla en un momento determinado de
-  la operación.
-- `inventoryCategoryVisible`: controla la visibilidad de la categoría de
-  inventario en la UI. Permite mostrar u ocultar esta vista mientras el
-  equipo de ingeniería ajusta su contenido o mientras Panini valida los
-  datos de inventario antes de exponerlos.
+## 2. Flags implementados
+La aplicación expone tres flags locales:
 
-## Alcance en esta prueba de concepto
-- Los flags son locales y estáticos. Viven dentro de la aplicación como
-  constantes o como un pequeño objeto de configuración en memoria.
-- No hay configuración remota en esta primera fase. El objetivo es que la
-  solución móvil ofrezca un mecanismo claro de control de funcionalidades
-  sin agregar dependencias externas todavía.
+- `ticketCreationEnabled`: controla la creación de nuevos tickets.
+- `ticketPriorityUpdateEnabled`: controla la actualización de prioridad
+  de tickets existentes.
+- `inventoryCategoryVisible`: controla la visibilidad de la categoría
+  Inventory en la UI.
 
-## Evolución prevista
-- En fases posteriores estos mismos flags pueden migrar a una configuración
-  remota: un endpoint del backend de Panini o un proveedor de remote
-  config. La forma en que la UI consume los flags no cambia, solo la
-  fuente desde la que se obtienen.
-- Esto permitirá al equipo técnico de Panini activar o desactivar
-  capacidades en producción sin requerir una nueva publicación de la
-  aplicación.
+Los tres valores por defecto son `true`, por lo que el comportamiento
+estándar de la aplicación es el flujo completo. Para experimentar con
+escenarios de desactivación, basta con cambiar el valor en un único
+archivo.
 
-## Valor para el negocio
-Los feature flags permiten a Panini habilitar o desactivar capacidades
-durante la validación interna de la solución móvil sin reescribir
-múltiples pantallas ni bloquear el avance del equipo móvil. Es un
-mecanismo de control operativo de bajo costo que se alinea con la
-estrategia de entrega incremental de la prueba de concepto y con su
-integración futura con backend.
+## 3. ticketCreationEnabled
+Cuando es `true`, `TicketListScreen` muestra el botón "Crear ticket",
+que navega al formulario de creación.
+
+Cuando es `false`, la pantalla oculta el botón y muestra un mensaje en
+español informando que la creación de tickets está deshabilitada durante
+la validación interna. Además, `AppNavGraph` ignora la navegación hacia
+`CreateTicket` si la lambda de creación se invoca con el flag
+desactivado, manteniendo defensa en profundidad.
+
+## 4. ticketPriorityUpdateEnabled
+Cuando es `true`, `TicketDetailScreen` muestra los chips de prioridad
+que permiten escalar o desescalar el ticket.
+
+Cuando es `false`, los chips se ocultan, se mantiene visible la línea
+"Prioridad actual: <nivel>" y se muestra un mensaje en español indicando
+que la actualización de prioridad está deshabilitada durante la
+validación interna. El flujo de cambio de estado permanece operativo en
+ambos casos.
+
+## 5. inventoryCategoryVisible
+Cuando es `true`, el listado muestra todos los tickets y el formulario
+de creación ofrece todas las categorías.
+
+Cuando es `false`:
+
+- `TicketListScreen` filtra los tickets de categoría Inventory antes de
+  renderizar la `LazyColumn`.
+- `CreateTicketScreen` excluye Inventory de los chips de categoría
+  disponibles.
+
+Este flag permite ocultar el área de inventario temporalmente, por
+ejemplo durante una ventana en la que el equipo de inventario está
+conciliando datos y Panini prefiere no exponer esa categoría desde la
+solución móvil.
+
+## 6. Ubicación técnica
+La definición vive en `app/.../core/featureflag/FeatureFlags.kt`. Es un
+`object` con propiedades `val` booleanas. `AppNavGraph` lee los flags y
+los pasa como parámetros explícitos a las pantallas afectadas,
+manteniendo las pantallas mayormente sin estado y los flags concentrados
+en un único punto de configuración.
+
+## 7. Evolución futura
+- Configuración remota: los mismos flags pueden trasladarse a un
+  servicio de configuración remoto administrado por Panini, por ejemplo
+  un endpoint de configuración expuesto por el backend de soporte
+  interno. La forma en que la UI los consume no cambia; solo cambia la
+  fuente desde donde se obtienen.
+- Modelo de exposición: si la lista de flags crece, conviene reemplazar
+  el `object` por una clase con `StateFlow<FeatureFlagsSnapshot>` para
+  que la UI recomponga automáticamente cuando un flag remoto cambie en
+  caliente.
+- Catálogo dinámico: cuando exista backend, podría añadirse un endpoint
+  dedicado para que el equipo técnico de Panini gestione los flags sin
+  publicar una nueva versión de la aplicación.
+
+El valor de negocio principal es que Panini pueda habilitar o desactivar
+capacidades durante la validación interna de la solución móvil sin
+intervenir múltiples pantallas, alineando el ritmo de entrega del
+producto con la estrategia operativa del equipo de ingeniería.
