@@ -1,74 +1,131 @@
 # Decisiones técnicas - Panini Support PoC
 
-Este documento resume las decisiones técnicas que guían la primera prueba
-de concepto móvil de Panini Support. Está dirigido al equipo de ingeniería
-interno de Panini que recibirá el handoff técnico y continuará la
-construcción de la solución móvil en fases posteriores. Las decisiones
-están alineadas al flujo de soporte interno de Panini sobre incidencias de
-proveedores, distribución de paquetes, faltantes de inventario y
-coordinación con puntos de venta.
+## 1. Propósito técnico
+Este documento describe las decisiones técnicas que sostienen la prueba de
+concepto móvil de Panini Support. Está dirigido al equipo de ingeniería de
+Panini que recibe el handoff técnico y continuará la construcción de la
+solución móvil para la gestión de tickets internos relacionados con
+proveedores, distribución del álbum oficial de la Copa Mundial FIFA 2026,
+faltantes de inventario, errores logísticos y coordinación entre puntos de
+venta.
 
-## Lenguaje y UI: Kotlin y Jetpack Compose
-- Kotlin es el lenguaje oficial recomendado por Google para desarrollo
-  Android moderno. Aporta seguridad frente a nulos, sintaxis concisa y un
-  ecosistema maduro de librerías que el equipo móvil de Panini podrá
-  mantener a largo plazo.
-- Jetpack Compose es el toolkit de UI declarativo de Android. Permite
-  construir pantallas reactivas con menos código que el sistema XML
-  tradicional, lo cual reduce el costo de mantenimiento del flujo de
-  tickets y facilita iterar sobre nuevas vistas conforme el negocio
-  agregue requerimientos de soporte interno.
+## 2. Arquitectura móvil
+La aplicación está construida con Kotlin sobre Android. La interfaz se
+implementa con Jetpack Compose y Material 3, sin layouts XML.
 
-## Arquitectura: MVVM
-- MVVM separa el estado de la UI (en los ViewModels) del renderizado (en
-  los Composables). Esto permite probar la lógica del flujo de tickets de
-  forma aislada y mantiene las pantallas enfocadas únicamente en mostrar
-  datos y emitir eventos de usuario, como crear un ticket o cambiar su
-  prioridad.
-- La separación facilita que distintas personas del equipo móvil trabajen
-  en paralelo sobre UI y lógica de negocio sin pisarse el trabajo, algo
-  importante para mantener un ritmo de entrega sostenible en futuras
-  fases del producto.
+- Kotlin: lenguaje oficial recomendado por Google para Android moderno.
+  Aporta seguridad frente a nulos, sintaxis concisa y un ecosistema maduro
+  de librerías para que el equipo móvil de Panini mantenga la solución a
+  largo plazo.
+- Jetpack Compose: toolkit declarativo que reduce el costo de
+  mantenimiento de pantallas como el listado, el detalle y el formulario
+  de creación de tickets, y facilita iterar conforme el equipo móvil
+  agregue nuevos flujos.
+- Material 3: provee componentes y tipografía estándar que mantienen una
+  experiencia coherente sin invertir tiempo en un sistema de diseño
+  propio.
+- Navigation Compose: centraliza el grafo de navegación en
+  `ui/navigation/AppNavGraph.kt`, manteniendo las pantallas independientes
+  del controlador de navegación.
 
-## Datos: mock en memoria para esta primera PoC
-- En esta primera prueba de concepto los tickets de incidencias logísticas
-  y las categorías de inventario viven en memoria mediante datos mock. El
-  objetivo es validar el flujo de soporte interno (creación, listado,
-  cambio de prioridad y vista de inventario) sin bloquear la entrega
-  móvil por la disponibilidad de un backend.
-- Esta decisión es un control de alcance deliberado para entregar una
-  prueba de concepto rápida y mantenible que el equipo técnico de Panini
-  pueda evolucionar, no una limitación de diseño.
+## 3. Separación de responsabilidades
+La solución sigue el patrón MVVM, ajustado al estilo declarativo de
+Compose:
 
-## Preparación para integración futura: Retrofit, DTOs y API Service
-- Aunque todavía no existe un backend conectado, la solución móvil se
-  estructura para incorporar Retrofit, DTOs y una capa de API Service.
-  Esto permite que, cuando el equipo de backend de Panini exponga los
-  endpoints reales de tickets, los mismos ViewModels puedan consumir el
-  servicio remoto sin reescribir la UI.
-- Los DTOs y el contrato inicial en `/contracts/tickets-api.yaml` actúan
-  como punto de acuerdo entre el equipo móvil y el equipo de backend
-  durante la integración futura.
+- UI (`ui/.../*Screen.kt`): pantallas mayormente sin estado. Reciben un
+  `UiState` y callbacks (por ejemplo, `onCreateTicket` o
+  `onStatusSelected`) y solo renderizan. Esto simplifica las pruebas y
+  mantiene la lógica fuera del árbol de Composables.
+- ViewModel (`ui/.../*ViewModel.kt`): mantiene el estado de cada pantalla
+  con `MutableStateFlow<UiState>` y expone una vista `StateFlow` solo
+  lectura. Procesa eventos del usuario, valida formularios y traduce
+  acciones a llamadas del repositorio.
+- Repositorio (`domain/repository/TicketRepository.kt`): contrato del
+  dominio sobre tickets. Expone `tickets: StateFlow<List<Ticket>>`,
+  `events: SharedFlow<TicketEvent>`, `getTicketById`, `createTicket`,
+  `updateTicketStatus` y `updateTicketPriority`.
+- Datos mock (`data/mock/MockTicketDataSource.kt`): proporciona la lista
+  inicial de tickets realistas para esta primera versión.
+- Networking (`data/remote/`, `core/network/`): capa preparada para la
+  futura integración con el backend.
 
-## Fuera de alcance en esta primera PoC
-Las siguientes tecnologías están excluidas conscientemente para mantener
-un alcance acotado, una entrega rápida y un código mantenible por el
-equipo técnico de Panini. No son limitaciones impuestas, sino decisiones
-de control de alcance para una prueba de concepto empresarial.
+## 4. Datos mock e integración futura
+La fuente activa de tickets es `InMemoryTicketRepository`. Mantiene una
+lista priorizada en memoria a partir de `MockTicketDataSource` y expone
+los cambios mediante `StateFlow`. La decisión de comenzar con datos mock
+permite validar el flujo de soporte interno (creación, listado, detalle,
+actualización de prioridad y de estado) sin depender de la disponibilidad
+de un backend.
+
+Los modelos del dominio (`Ticket`, `TicketCategory`, `TicketPriority`,
+`TicketStatus`) son independientes de la capa de red, lo que permitirá
+sustituir la implementación de `TicketRepository` por una versión que
+consuma el backend real sin reescribir la UI ni los ViewModels.
+
+## 5. Networking preparado
+La capa de red existe en `data/remote/` y `core/network/`:
+
+- `PaniniSupportApiService`: interfaz Retrofit con los cinco endpoints
+  alineados al contrato `contracts/tickets-api.yaml`.
+- DTOs: `TicketDto`, `CreateTicketRequestDto`, `UpdateTicketStatusRequestDto`
+  y `UpdateTicketPriorityRequestDto`.
+- Mapper: `TicketDtoMapper` traduce entre DTO y modelo de dominio usando
+  valores de API estables (por ejemplo `point_of_sale`, `in_progress`).
+- `NetworkModule`: configura Retrofit con un `BASE_URL` placeholder, Gson
+  como conversor y `HttpLoggingInterceptor` para observabilidad básica
+  cuando se integre el backend.
+
+Esta capa está aislada y todavía no se invoca desde la UI ni desde el
+repositorio activo. Cuando el equipo de backend de Panini exponga la API
+real, una nueva implementación de `TicketRepository` (por ejemplo
+`RemoteTicketRepository`) podrá consumirla sin afectar las pantallas ya
+construidas.
+
+## 6. Decisiones fuera de alcance
+Las siguientes tecnologías se omitieron de manera consciente para entregar
+una prueba de concepto empresarial acotada, rápida de iterar y fácil de
+mantener por el equipo técnico de Panini. Son decisiones de control de
+alcance, no limitaciones impuestas.
 
 - Sin Room: la persistencia local no aporta valor al flujo de soporte
-  interno en esta fase. Los tickets viven en memoria y se reconstruyen al
-  abrir la aplicación. La persistencia real se evaluará cuando exista
-  backend.
-- Sin Firebase: los servicios de Firebase (analytics, crashlytics, remote
-  config, autenticación) se incorporarán en una fase posterior, cuando
-  Panini decida la plataforma definitiva de servicios de backend.
-- Sin Hilt: la inyección de dependencias manual es suficiente para el
-  grafo de objetos pequeño de esta prueba de concepto. Adoptar Hilt antes
-  de tener el alcance funcional definido agregaría complejidad sin
-  beneficio inmediato.
-- Sin autenticación real: el flujo de tickets que se valida en esta PoC
-  (proveedores, distribución, inventario, incidencias logísticas y
-  puntos de venta) no requiere un sistema de login para demostrar la
-  experiencia de soporte interno. La autenticación se integrará cuando
-  exista backend y un proveedor de identidad definido por Panini.
+  interno en esta fase. Los tickets viven en memoria; la persistencia
+  real se definirá cuando exista backend y se establezcan los criterios
+  de uso offline.
+- Sin Firebase: los servicios de analytics, crashlytics, remote config y
+  autenticación se incorporarán cuando Panini defina su plataforma de
+  servicios.
+- Sin Hilt: la inyección manual a través de `AppContainer` y
+  `TicketViewModelFactory` es suficiente para el grafo actual. Adoptar
+  un framework de inyección antes de tener el alcance funcional
+  definido agregaría complejidad sin beneficio inmediato.
+- Sin autenticación real: el flujo de tickets que se valida en esta
+  prueba de concepto no requiere un proveedor de identidad para
+  demostrarse. La autenticación se integrará cuando exista backend y se
+  decida el proveedor.
+- Sin persistencia entre sesiones: al reiniciar la aplicación, los datos
+  vuelven al estado de los tickets mock. Es coherente con el alcance de
+  validación interna de esta fase.
+
+## 7. Cómo continuar la solución
+Pasos recomendados para el equipo técnico de Panini cuando inicie la
+integración real con el backend:
+
+1. Implementar un `RemoteTicketRepository` que use `PaniniSupportApiService`
+   y reutilice `TicketDtoMapper`, manteniendo la firma de
+   `TicketRepository` para no afectar a los ViewModels existentes.
+2. Cambiar la instanciación del repositorio en `core/di/AppContainer.kt`
+   para usar la nueva implementación; `TicketViewModelFactory` no
+   requiere cambios.
+3. Declarar `INTERNET` en `AndroidManifest.xml` y, si el backend de
+   desarrollo se expone en HTTP, configurar `network_security_config.xml`.
+4. Reemplazar el `BASE_URL` placeholder en `NetworkModule` por la URL
+   real del backend de Panini Support.
+5. Evolucionar `FeatureFlags` hacia configuración remota cuando Panini
+   estandarice una plataforma de remote config.
+6. Definir un proveedor de identidad y reemplazar el login simulado por
+   el flujo real, conservando la separación entre pantalla, ViewModel y
+   repositorio.
+
+Esta hoja de ruta mantiene la UI y los ViewModels intactos: los cambios se
+concentran en la capa de datos y en la configuración, gracias a la
+separación descrita en este documento.

@@ -1,13 +1,427 @@
 openapi: 3.0.3
 info:
   title: API de Tickets de Panini Support
-  version: 0.0.1
+  version: 1.0.0
   description: >
-    Contrato inicial para la futura integración entre la aplicación móvil
-    Panini Support y un backend de gestión de tickets internos. El contrato
-    completo de endpoints, requests y responses se definirá en un bloque
-    posterior, manteniendo coherencia con los flujos de tickets implementados
-    en la aplicación.
-paths: {}
+    Contrato de la API para la integración futura entre la aplicación móvil
+    Panini Support y el backend de gestión de tickets internos. El alcance
+    cubre el flujo de incidencias operativas relacionadas con proveedores,
+    distribución del álbum oficial de la Copa Mundial FIFA 2026, faltantes
+    de inventario, errores logísticos y coordinación entre puntos de venta.
+
+servers:
+  - url: https://api.panini-support.example/
+    description: Servidor placeholder para la integración futura.
+
+tags:
+  - name: Tickets
+    description: Operaciones sobre tickets internos de soporte de Panini.
+
+paths:
+  /tickets:
+    get:
+      tags: [Tickets]
+      operationId: listTickets
+      summary: Lista los tickets internos de soporte.
+      description: >
+        Devuelve los tickets internos registrados. Permite filtrar de manera
+        opcional por categoría operativa, prioridad o estado actual.
+      parameters:
+        - $ref: '#/components/parameters/CategoryQuery'
+        - $ref: '#/components/parameters/PriorityQuery'
+        - $ref: '#/components/parameters/StatusQuery'
+      responses:
+        '200':
+          description: Lista de tickets devuelta correctamente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketResponse'
+              examples:
+                listadoPanini:
+                  summary: Ejemplo de listado priorizado de tickets de Panini Support.
+                  value:
+                    - id: TCK-001
+                      title: Faltante de sobres en punto de venta Mall San José
+                      description: El punto de venta del Mall San José reporta un faltante de 1.200 sobres del álbum FIFA 2026 antes del fin de semana de mayor afluencia. Se requiere reposición prioritaria desde la bodega central.
+                      supplier: Distribuidora Centro S.A.
+                      createdAt: 2026-05-25
+                      category: inventory
+                      priority: critical
+                      status: open
+                    - id: TCK-002
+                      title: Retraso en entrega de paquetes promocionales
+                      description: El proveedor de transporte reporta un retraso estimado de 48 horas en la entrega de paquetes promocionales asignados a la ruta del Pacífico Central.
+                      supplier: TransExpress CR
+                      createdAt: 2026-05-26
+                      category: distribution
+                      priority: high
+                      status: in_progress
+                    - id: TCK-006
+                      title: Punto de venta sin reposición programada en Liberia
+                      description: La tienda asociada en Liberia no aparece en la programación de reposición de la semana actual.
+                      supplier: Distribuidora Centro S.A.
+                      createdAt: 2026-05-27
+                      category: point_of_sale
+                      priority: medium
+                      status: open
+
+    post:
+      tags: [Tickets]
+      operationId: createTicket
+      summary: Registra un nuevo ticket interno de soporte.
+      description: >
+        Crea un nuevo ticket asociado a un proveedor o equipo interno. El
+        backend asigna identificador y fecha de creación.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+            examples:
+              nuevoTicketLogistica:
+                summary: Diferencia entre guía y mercadería recibida.
+                value:
+                  title: Diferencia entre guía de despacho e inventario recibido
+                  description: El centro de distribución de Heredia recibe 480 cajas pero la guía indica 510. Se requiere conciliación urgente con el proveedor de transporte.
+                  supplier: TransExpress CR
+                  category: logistics
+                  priority: high
+              nuevoTicketProveedor:
+                summary: Entrega parcial de un proveedor.
+                value:
+                  title: Entrega parcial del 65% del material de empaque
+                  description: El proveedor entregó únicamente el 65% del pedido de bolsas plásticas para empaque del álbum FIFA 2026.
+                  supplier: Papelera Andina
+                  category: supplier
+                  priority: medium
+      responses:
+        '201':
+          description: Ticket creado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+              examples:
+                ticketCreado:
+                  summary: Ticket recién creado por el backend.
+                  value:
+                    id: TCK-010
+                    title: Diferencia entre guía de despacho e inventario recibido
+                    description: El centro de distribución de Heredia recibe 480 cajas pero la guía indica 510.
+                    supplier: TransExpress CR
+                    createdAt: 2026-05-30
+                    category: logistics
+                    priority: high
+                    status: open
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /tickets/{ticketId}:
+    get:
+      tags: [Tickets]
+      operationId: getTicketById
+      summary: Obtiene el detalle de un ticket por su identificador.
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      responses:
+        '200':
+          description: Detalle del ticket.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+              examples:
+                detalleTicket:
+                  summary: Detalle de un ticket de calidad.
+                  value:
+                    id: TCK-003
+                    title: Lote con álbumes dañados en bodega central
+                    description: Se detecta el lote LT-2026-118 con tapas despegadas en aproximadamente el 12% de las unidades. Se solicita coordinación con la imprenta para gestionar la reposición.
+                    supplier: Impresora Italprint
+                    createdAt: 2026-05-22
+                    category: quality
+                    priority: critical
+                    status: blocked
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tickets/{ticketId}/status:
+    patch:
+      tags: [Tickets]
+      operationId: updateTicketStatus
+      summary: Actualiza el estado de un ticket existente.
+      description: >
+        Cambia el estado operativo de un ticket. Útil para reflejar que el
+        equipo interno está trabajando un caso, que quedó bloqueado por un
+        proveedor o que se resolvió.
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTicketStatusRequest'
+            examples:
+              moverEnProgreso:
+                summary: Mover ticket a estado en progreso.
+                value:
+                  status: in_progress
+              marcarResuelto:
+                summary: Marcar el ticket como resuelto.
+                value:
+                  status: resolved
+      responses:
+        '200':
+          description: Ticket actualizado con el nuevo estado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tickets/{ticketId}/priority:
+    patch:
+      tags: [Tickets]
+      operationId: updateTicketPriority
+      summary: Actualiza la prioridad de un ticket existente.
+      description: >
+        Cambia la prioridad asignada a un ticket. Permite reordenar el listado
+        operativo cuando una incidencia escala o se desescala.
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTicketPriorityRequest'
+            examples:
+              escalarCritica:
+                summary: Escalar el ticket a prioridad crítica.
+                value:
+                  priority: critical
+              desescalarMedia:
+                summary: Bajar la prioridad a media.
+                value:
+                  priority: medium
+      responses:
+        '200':
+          description: Ticket actualizado con la nueva prioridad.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
-  schemas: {}
+  parameters:
+    TicketId:
+      name: ticketId
+      in: path
+      required: true
+      description: Identificador único del ticket, por ejemplo TCK-001.
+      schema:
+        type: string
+        example: TCK-001
+
+    CategoryQuery:
+      name: category
+      in: query
+      required: false
+      description: Filtra tickets por categoría operativa.
+      schema:
+        $ref: '#/components/schemas/TicketCategory'
+
+    PriorityQuery:
+      name: priority
+      in: query
+      required: false
+      description: Filtra tickets por prioridad.
+      schema:
+        $ref: '#/components/schemas/TicketPriority'
+
+    StatusQuery:
+      name: status
+      in: query
+      required: false
+      description: Filtra tickets por estado actual.
+      schema:
+        $ref: '#/components/schemas/TicketStatus'
+
+  schemas:
+    TicketResponse:
+      type: object
+      description: Ticket interno de soporte de Panini.
+      required:
+        - id
+        - title
+        - description
+        - supplier
+        - createdAt
+        - category
+        - priority
+        - status
+      properties:
+        id:
+          type: string
+          description: Identificador único del ticket.
+          example: TCK-001
+        title:
+          type: string
+          description: Título corto del ticket.
+          example: Faltante de sobres en punto de venta Mall San José
+        description:
+          type: string
+          description: Descripción detallada del incidente reportado.
+          example: El punto de venta del Mall San José reporta un faltante de 1.200 sobres del álbum FIFA 2026 antes del fin de semana de mayor afluencia.
+        supplier:
+          type: string
+          description: Proveedor externo o equipo interno asociado al ticket.
+          example: Distribuidora Centro S.A.
+        createdAt:
+          type: string
+          format: date
+          description: Fecha de creación del ticket en formato ISO yyyy-MM-dd.
+          example: '2026-05-25'
+        category:
+          $ref: '#/components/schemas/TicketCategory'
+        priority:
+          $ref: '#/components/schemas/TicketPriority'
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+
+    CreateTicketRequest:
+      type: object
+      description: Datos requeridos para crear un nuevo ticket interno.
+      required:
+        - title
+        - description
+        - supplier
+        - category
+        - priority
+      properties:
+        title:
+          type: string
+          description: Título corto y descriptivo del incidente.
+          example: Paquetes asignados a ruta incorrecta
+        description:
+          type: string
+          description: Descripción detallada del incidente reportado.
+          example: Treinta paquetes destinados a Guanacaste fueron cargados por error en la ruta de Cartago.
+        supplier:
+          type: string
+          description: Proveedor externo o equipo interno asociado al ticket.
+          example: TransExpress CR
+        category:
+          $ref: '#/components/schemas/TicketCategory'
+        priority:
+          $ref: '#/components/schemas/TicketPriority'
+
+    UpdateTicketStatusRequest:
+      type: object
+      description: Nuevo estado a aplicar al ticket.
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+
+    UpdateTicketPriorityRequest:
+      type: object
+      description: Nueva prioridad a aplicar al ticket.
+      required:
+        - priority
+      properties:
+        priority:
+          $ref: '#/components/schemas/TicketPriority'
+
+    TicketCategory:
+      type: string
+      description: Categoría operativa del ticket de soporte interno.
+      enum:
+        - distribution
+        - inventory
+        - supplier
+        - quality
+        - point_of_sale
+        - logistics
+      example: inventory
+
+    TicketPriority:
+      type: string
+      description: Prioridad asignada al ticket.
+      enum:
+        - critical
+        - high
+        - medium
+        - low
+      example: critical
+
+    TicketStatus:
+      type: string
+      description: Estado operativo actual del ticket.
+      enum:
+        - open
+        - in_progress
+        - blocked
+        - resolved
+      example: open
+
+    ErrorResponse:
+      type: object
+      description: Respuesta estándar de error devuelta por la API.
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Código corto y estable del error.
+          example: TICKET_NOT_FOUND
+        message:
+          type: string
+          description: Mensaje legible orientado al equipo técnico de Panini.
+          example: No se encontró el ticket con identificador TCK-999.
+
+  responses:
+    BadRequest:
+      description: La solicitud no es válida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            campoFaltante:
+              summary: Campo requerido faltante.
+              value:
+                code: VALIDATION_ERROR
+                message: El campo title es obligatorio.
+            categoriaInvalida:
+              summary: Categoría desconocida.
+              value:
+                code: VALIDATION_ERROR
+                message: La categoría enviada no es válida.
+
+    NotFound:
+      description: El registro solicitado no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            ticketNoEncontrado:
+              summary: Ticket no encontrado.
+              value:
+                code: TICKET_NOT_FOUND
+                message: No se encontró el ticket con identificador TCK-999.
