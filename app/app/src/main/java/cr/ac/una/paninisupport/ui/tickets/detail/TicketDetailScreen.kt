@@ -30,6 +30,7 @@ import cr.ac.una.paninisupport.domain.model.TicketStatus
 @Composable
 fun TicketDetailScreen(
     uiState: TicketDetailUiState,
+    priorityUpdateEnabled: Boolean,
     onStatusSelected: (TicketStatus) -> Unit,
     onPrioritySelected: (TicketPriority) -> Unit,
     onBack: () -> Unit
@@ -65,6 +66,7 @@ fun TicketDetailScreen(
                         TicketDetailContent(
                             ticket = uiState.ticket,
                             errorMessage = uiState.errorMessage,
+                            priorityUpdateEnabled = priorityUpdateEnabled,
                             onStatusSelected = onStatusSelected,
                             onPrioritySelected = onPrioritySelected
                         )
@@ -94,6 +96,7 @@ fun TicketDetailScreen(
 private fun TicketDetailContent(
     ticket: Ticket,
     errorMessage: String?,
+    priorityUpdateEnabled: Boolean,
     onStatusSelected: (TicketStatus) -> Unit,
     onPrioritySelected: (TicketPriority) -> Unit
 ) {
@@ -139,10 +142,18 @@ private fun TicketDetailContent(
             text = "Prioridad actual: ${ticket.priority.label}",
             style = MaterialTheme.typography.titleSmall
         )
-        PriorityChipsRow(
-            selected = ticket.priority,
-            onSelect = onPrioritySelected
-        )
+        if (priorityUpdateEnabled) {
+            PriorityChipsRow(
+                selected = ticket.priority,
+                onSelect = onPrioritySelected
+            )
+        } else {
+            Text(
+                text = "La actualización de prioridad está deshabilitada durante la validación interna.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         if (errorMessage != null) {
             Text(

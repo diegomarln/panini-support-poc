@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cr.ac.una.paninisupport.core.di.AppContainer
+import cr.ac.una.paninisupport.core.featureflag.FeatureFlags
 import cr.ac.una.paninisupport.ui.auth.LoginScreen
 import cr.ac.una.paninisupport.ui.auth.LoginViewModel
 import cr.ac.una.paninisupport.ui.tickets.create.CreateTicketScreen
@@ -60,11 +61,15 @@ fun AppNavGraph(appContainer: AppContainer) {
 
             TicketListScreen(
                 uiState = uiState,
+                ticketCreationEnabled = FeatureFlags.ticketCreationEnabled,
+                inventoryCategoryVisible = FeatureFlags.inventoryCategoryVisible,
                 onOpenTicketDetail = { ticketId ->
                     navController.navigate(AppRoute.ticketDetail(ticketId))
                 },
                 onCreateTicket = {
-                    navController.navigate(AppRoute.CreateTicket)
+                    if (FeatureFlags.ticketCreationEnabled) {
+                        navController.navigate(AppRoute.CreateTicket)
+                    }
                 }
             )
         }
@@ -90,6 +95,7 @@ fun AppNavGraph(appContainer: AppContainer) {
 
             TicketDetailScreen(
                 uiState = uiState,
+                priorityUpdateEnabled = FeatureFlags.ticketPriorityUpdateEnabled,
                 onStatusSelected = ticketDetailViewModel::onStatusSelected,
                 onPrioritySelected = ticketDetailViewModel::onPrioritySelected,
                 onBack = { navController.popBackStack() }
@@ -109,6 +115,7 @@ fun AppNavGraph(appContainer: AppContainer) {
 
             CreateTicketScreen(
                 uiState = uiState,
+                inventoryCategoryVisible = FeatureFlags.inventoryCategoryVisible,
                 onTitleChanged = createTicketViewModel::onTitleChanged,
                 onDescriptionChanged = createTicketViewModel::onDescriptionChanged,
                 onSupplierChanged = createTicketViewModel::onSupplierChanged,

@@ -28,6 +28,7 @@ import cr.ac.una.paninisupport.domain.model.TicketPriority
 @Composable
 fun CreateTicketScreen(
     uiState: CreateTicketUiState,
+    inventoryCategoryVisible: Boolean,
     onTitleChanged: (String) -> Unit,
     onDescriptionChanged: (String) -> Unit,
     onSupplierChanged: (String) -> Unit,
@@ -36,6 +37,12 @@ fun CreateTicketScreen(
     onCreate: () -> Unit,
     onBack: () -> Unit
 ) {
+    val availableCategories = if (inventoryCategoryVisible) {
+        TicketCategory.values().toList()
+    } else {
+        TicketCategory.values().filter { it != TicketCategory.Inventory }
+    }
+
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
             modifier = Modifier
@@ -81,6 +88,7 @@ fun CreateTicketScreen(
                 style = MaterialTheme.typography.titleSmall
             )
             CategoryChipsRow(
+                categories = availableCategories,
                 selected = uiState.category,
                 onSelect = onCategorySelected
             )
@@ -122,6 +130,7 @@ fun CreateTicketScreen(
 
 @Composable
 private fun CategoryChipsRow(
+    categories: List<TicketCategory>,
     selected: TicketCategory,
     onSelect: (TicketCategory) -> Unit
 ) {
@@ -131,7 +140,7 @@ private fun CategoryChipsRow(
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        TicketCategory.values().forEach { category ->
+        categories.forEach { category ->
             FilterChip(
                 selected = selected == category,
                 onClick = { onSelect(category) },

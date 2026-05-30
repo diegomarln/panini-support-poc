@@ -22,13 +22,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cr.ac.una.paninisupport.domain.model.Ticket
+import cr.ac.una.paninisupport.domain.model.TicketCategory
 
 @Composable
 fun TicketListScreen(
     uiState: TicketListUiState,
+    ticketCreationEnabled: Boolean,
+    inventoryCategoryVisible: Boolean,
     onOpenTicketDetail: (String) -> Unit,
     onCreateTicket: () -> Unit
 ) {
+    val visibleTickets = if (inventoryCategoryVisible) {
+        uiState.tickets
+    } else {
+        uiState.tickets.filter { it.category != TicketCategory.Inventory }
+    }
+
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
             modifier = Modifier
@@ -46,11 +55,20 @@ fun TicketListScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onCreateTicket,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Crear ticket")
+
+            if (ticketCreationEnabled) {
+                OutlinedButton(
+                    onClick = onCreateTicket,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Crear ticket")
+                }
+            } else {
+                Text(
+                    text = "La creación de tickets está deshabilitada durante la validación interna.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -70,7 +88,7 @@ fun TicketListScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                uiState.tickets.isEmpty() -> {
+                visibleTickets.isEmpty() -> {
                     Text(
                         text = "No hay tickets registrados.",
                         style = MaterialTheme.typography.bodyMedium
@@ -80,7 +98,7 @@ fun TicketListScreen(
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(uiState.tickets, key = { it.id }) { ticket ->
+                        items(visibleTickets, key = { it.id }) { ticket ->
                             TicketRow(
                                 ticket = ticket,
                                 onClick = { onOpenTicketDetail(ticket.id) }
