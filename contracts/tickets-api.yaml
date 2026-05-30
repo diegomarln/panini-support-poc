@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info:
+  title: API de Tickets de Panini Support
+  version: 0.0.1
+  description: >
+    Contrato inicial para la futura integración entre la aplicación móvil
+    Panini Support y un backend de gestión de tickets internos. El contrato
+    completo de endpoints, requests y responses se definirá en un bloque
+    posterior, manteniendo coherencia con los flujos de tickets implementados
+    en la aplicación.
+paths: {}
+components:
+  schemas: {}
