@@ -1,62 +1,95 @@
 # Panini Support PoC
 
 ## Descripción general
-Prueba de concepto móvil desarrollada para Panini con el objetivo de
-centralizar el flujo de tickets de soporte interno. La solución móvil se
-enfoca en registrar, listar y priorizar incidencias operativas reportadas
-por el equipo interno, y está diseñada para ser simple, mantenible y lista
-para una integración futura con backend.
+
+Panini Support PoC es una prueba de concepto móvil para centralizar la gestión de tickets internos relacionados con la operación del álbum oficial de la Copa Mundial FIFA 2026.
+
+La solución permite establecer una base Android clara para registrar, consultar y actualizar solicitudes de soporte asociadas con proveedores, distribución de paquetes, faltantes de inventario, errores logísticos y coordinación entre puntos de venta.
+
+El proyecto está diseñado para ser simple, mantenible y preparado para que otros ingenieros puedan continuar la integración con un backend real en una fase posterior.
 
 ## Contexto operativo
-Panini gestiona la distribución y el soporte operativo del álbum oficial de
-la Copa Mundial de la FIFA 2026. Durante esta operación surgen incidencias
-relacionadas con proveedores, distribución de paquetes, faltantes de
-inventario, errores logísticos y coordinación con puntos de venta. Esta
-prueba de concepto entrega al equipo técnico de Panini una base móvil sobre
-la cual escalar la gestión de tickets en futuras fases del producto.
+
+Durante la operación de distribución del álbum, las incidencias pueden generarse desde distintos puntos de venta, proveedores o equipos internos. Cuando estos reportes se manejan mediante correos, hojas de cálculo o mensajes informales, se vuelve más difícil dar seguimiento, evitar duplicidades y priorizar los casos críticos.
+
+Esta aplicación móvil propone un flujo centralizado de tickets para mejorar la visibilidad operativa y facilitar la continuidad técnica del producto.
 
 ## Estructura del repositorio
-```
+
+```text
 panini-support-poc/
-- app/         Proyecto Android (Kotlin + Jetpack Compose) de la solución móvil
-- contracts/   Contratos YAML/OpenAPI para la integración futura con backend
-- docs/        Documentación de handoff técnico para el equipo de ingeniería
-- video/       Enlace al video demo final de la prueba de concepto
-- README.md
-- .gitignore
+├── app/          Proyecto Android con Kotlin y Jetpack Compose
+├── contracts/    Contratos de API en formato YAML/OpenAPI
+├── docs/         Documentación técnica de handoff
+├── video/        Enlace al video demo
+├── README.md
+└── .gitignore
 ```
 
 ## Tecnologías utilizadas
+
 - Kotlin
+- Android Studio
 - Jetpack Compose
-- MVVM, para separar el estado de la UI del renderizado
-- Retrofit y DTOs, preparados para la integración futura con backend
-- Datos mock en memoria, para esta primera prueba de concepto
+- Material 3
+- Navigation
+- MVVM
+- StateFlow
+- Retrofit
+- DTOs
+- Mock data
 
-## Alcance actual
-Este bloque inicial establece la estructura del repositorio, el proyecto
-Android base dentro de `/app` y la documentación de handoff técnico. Las
-pantallas de creación, listado y priorización de tickets, así como la vista
-de inventario por categoría, se incorporarán en bloques posteriores siguiendo
-los lineamientos descritos en `/docs`.
+## Funcionalidades consideradas
 
-## Cómo ejecutar el proyecto
-El proyecto Android vive dentro de `/app`. El comando de build se debe
-ejecutar desde esa carpeta:
+La solución móvil contempla los siguientes flujos principales:
 
-```
+- Autenticación simulada.
+- Listado de tickets de soporte.
+- Visualización de detalle de ticket.
+- Creación de tickets.
+- Actualización de estado.
+- Manejo básico de prioridades.
+- Actualización reactiva del listado.
+- Feature Flags para habilitar o deshabilitar funcionalidades durante validaciones internas.
+- Estructura de networking preparada para integración futura con backend.
+
+## Ejecución del proyecto
+
+El proyecto Android se encuentra dentro de la carpeta `/app`.
+
+Para compilarlo desde PowerShell:
+
+```powershell
 cd app
 .\gradlew.bat assembleDebug
 ```
 
-## Validación inicial
-El build inicial de Android se validó correctamente con `assembleDebug`,
-obteniendo `BUILD SUCCESSFUL`. Esto confirma que el entorno Gradle del
-proyecto está correctamente configurado para que el equipo móvil continúe
-construyendo sobre esta base.
+También puede abrirse la carpeta `/app` directamente desde Android Studio.
 
-## Estado actual
-Bloque 0 completado: estructura del repositorio creada, proyecto Android
-base inicializado y documentación de handoff técnico publicada. La
-implementación funcional del flujo de tickets se entregará en los siguientes
-bloques.
+## Documentación técnica
+
+La documentación técnica del proyecto se encuentra en `/docs`:
+
+- `technical-decisions.md`: decisiones técnicas principales.
+- `event-driven-flow.md`: explicación del flujo reactivo de tickets.
+- `feature-flags.md`: explicación de las Feature Flags.
+
+## Contratos de API
+
+Los contratos de integración se ubican en `/contracts`.
+
+El archivo principal es:
+
+```text
+contracts/tickets-api.yaml
+```
+
+Este contrato define la base para la futura integración entre la aplicación móvil y el backend de gestión de tickets.
+
+## Video demo
+
+El enlace al video demo se documenta en:
+
+```text
+video/demo-link.md
+```
