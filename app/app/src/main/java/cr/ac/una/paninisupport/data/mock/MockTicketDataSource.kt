@@ -61,7 +61,7 @@ object MockTicketDataSource {
         Ticket(
             id = "TCK-006",
             title = "Punto de venta sin reposición programada en Liberia",
-            description = "La tienda asociada en Liberia no aparece en la programación de reposición de la semana en curso. El stock actual no cubre la demanda proyectada del fin de semana. Se requiere coordinar un despacho extraordinario.",
+            description = "La tienda asociada en Liberia no aparece en la programación de reposición de la semana actual. El stock actual no cubre la demanda proyectada del fin de semana. Se requiere coordinar un despacho extraordinario.",
             supplier = "Distribuidora Centro S.A.",
             createdAt = "2026-05-27",
             category = TicketCategory.PointOfSale,
