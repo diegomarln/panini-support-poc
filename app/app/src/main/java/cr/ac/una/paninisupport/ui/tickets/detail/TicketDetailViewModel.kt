@@ -17,14 +17,17 @@ class TicketDetailViewModel(
     val uiState: StateFlow<TicketDetailUiState> = _uiState.asStateFlow()
 
     fun loadTicket(ticketId: String) {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update {
+            it.copy(isLoading = true, errorMessage = null, successMessage = null)
+        }
         val ticket = ticketRepository.getTicketById(ticketId)
         if (ticket == null) {
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     ticket = null,
-                    errorMessage = "No se encontró el ticket solicitado."
+                    errorMessage = "No se encontró el ticket solicitado.",
+                    successMessage = null
                 )
             }
         } else {
@@ -32,7 +35,8 @@ class TicketDetailViewModel(
                 it.copy(
                     isLoading = false,
                     ticket = ticket,
-                    errorMessage = null
+                    errorMessage = null,
+                    successMessage = null
                 )
             }
         }
@@ -42,35 +46,59 @@ class TicketDetailViewModel(
         val ticketId = _uiState.value.ticket?.id
         if (ticketId == null) {
             _uiState.update {
-                it.copy(errorMessage = "No hay un ticket cargado para actualizar.")
+                it.copy(
+                    errorMessage = "No hay un ticket cargado para actualizar.",
+                    successMessage = null
+                )
             }
             return
         }
         val updated = ticketRepository.updateTicketStatus(ticketId, status)
         if (updated == null) {
             _uiState.update {
-                it.copy(errorMessage = "No se pudo actualizar el estado del ticket.")
+                it.copy(
+                    errorMessage = "No se pudo actualizar el estado del ticket.",
+                    successMessage = null
+                )
             }
             return
         }
-        _uiState.update { it.copy(ticket = updated, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                ticket = updated,
+                errorMessage = null,
+                successMessage = "Estado actualizado correctamente."
+            )
+        }
     }
 
     fun onPrioritySelected(priority: TicketPriority) {
         val ticketId = _uiState.value.ticket?.id
         if (ticketId == null) {
             _uiState.update {
-                it.copy(errorMessage = "No hay un ticket cargado para actualizar.")
+                it.copy(
+                    errorMessage = "No hay un ticket cargado para actualizar.",
+                    successMessage = null
+                )
             }
             return
         }
         val updated = ticketRepository.updateTicketPriority(ticketId, priority)
         if (updated == null) {
             _uiState.update {
-                it.copy(errorMessage = "No se pudo actualizar la prioridad del ticket.")
+                it.copy(
+                    errorMessage = "No se pudo actualizar la prioridad del ticket.",
+                    successMessage = null
+                )
             }
             return
         }
-        _uiState.update { it.copy(ticket = updated, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                ticket = updated,
+                errorMessage = null,
+                successMessage = "Prioridad actualizada correctamente."
+            )
+        }
     }
 }

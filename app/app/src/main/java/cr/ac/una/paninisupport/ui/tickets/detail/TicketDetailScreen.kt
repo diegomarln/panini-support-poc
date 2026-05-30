@@ -65,6 +65,7 @@ fun TicketDetailScreen(
                         TicketDetailContent(
                             ticket = uiState.ticket,
                             errorMessage = uiState.errorMessage,
+                            successMessage = uiState.successMessage,
                             priorityUpdateEnabled = priorityUpdateEnabled,
                             onStatusSelected = onStatusSelected,
                             onPrioritySelected = onPrioritySelected
@@ -95,6 +96,7 @@ fun TicketDetailScreen(
 private fun TicketDetailContent(
     ticket: Ticket,
     errorMessage: String?,
+    successMessage: String?,
     priorityUpdateEnabled: Boolean,
     onStatusSelected: (TicketStatus) -> Unit,
     onPrioritySelected: (TicketPriority) -> Unit
@@ -158,6 +160,14 @@ private fun TicketDetailContent(
             Text(
                 text = errorMessage,
                 color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        if (successMessage != null) {
+            Text(
+                text = successMessage,
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodySmall
             )
         }

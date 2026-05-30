@@ -109,10 +109,18 @@ fun CreateTicketScreen(
                 )
             }
 
+            if (uiState.isCreated) {
+                Text(
+                    text = "Ticket creado correctamente.",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = onCreate,
-                enabled = !uiState.isSaving,
+                enabled = !uiState.isSaving && !uiState.isCreated,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "Crear ticket")

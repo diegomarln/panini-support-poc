@@ -22,6 +22,7 @@ import cr.ac.una.paninisupport.ui.tickets.detail.TicketDetailViewModel
 import cr.ac.una.paninisupport.ui.tickets.list.TicketListScreen
 import cr.ac.una.paninisupport.ui.tickets.list.TicketListViewModel
 import cr.ac.una.paninisupport.ui.viewmodel.TicketViewModelFactory
+import kotlinx.coroutines.delay
 
 @Composable
 fun AppNavGraph(appContainer: AppContainer) {
@@ -109,6 +110,7 @@ fun AppNavGraph(appContainer: AppContainer) {
 
             LaunchedEffect(uiState.isCreated) {
                 if (uiState.isCreated) {
+                    delay(800)
                     navController.popBackStack()
                 }
             }

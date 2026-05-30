@@ -38,6 +38,8 @@ class CreateTicketViewModel(
 
     fun save() {
         val current = _uiState.value
+        if (current.isSaving || current.isCreated) return
+
         val title = current.title.trim()
         val description = current.description.trim()
         val supplier = current.supplier.trim()
