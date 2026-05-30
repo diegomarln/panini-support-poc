@@ -15,6 +15,7 @@ import cr.ac.una.paninisupport.core.di.AppContainer
 import cr.ac.una.paninisupport.ui.auth.LoginScreen
 import cr.ac.una.paninisupport.ui.auth.LoginViewModel
 import cr.ac.una.paninisupport.ui.tickets.create.CreateTicketScreen
+import cr.ac.una.paninisupport.ui.tickets.create.CreateTicketViewModel
 import cr.ac.una.paninisupport.ui.tickets.detail.TicketDetailScreen
 import cr.ac.una.paninisupport.ui.tickets.detail.TicketDetailViewModel
 import cr.ac.una.paninisupport.ui.tickets.list.TicketListScreen
@@ -94,7 +95,24 @@ fun AppNavGraph(appContainer: AppContainer) {
         }
 
         composable(AppRoute.CreateTicket) {
+            val createTicketViewModel: CreateTicketViewModel =
+                viewModel(factory = ticketViewModelFactory)
+            val uiState by createTicketViewModel.uiState.collectAsState()
+
+            LaunchedEffect(uiState.isCreated) {
+                if (uiState.isCreated) {
+                    navController.popBackStack()
+                }
+            }
+
             CreateTicketScreen(
+                uiState = uiState,
+                onTitleChanged = createTicketViewModel::onTitleChanged,
+                onDescriptionChanged = createTicketViewModel::onDescriptionChanged,
+                onSupplierChanged = createTicketViewModel::onSupplierChanged,
+                onCategorySelected = createTicketViewModel::onCategorySelected,
+                onPrioritySelected = createTicketViewModel::onPrioritySelected,
+                onCreate = createTicketViewModel::save,
                 onBack = { navController.popBackStack() }
             )
         }

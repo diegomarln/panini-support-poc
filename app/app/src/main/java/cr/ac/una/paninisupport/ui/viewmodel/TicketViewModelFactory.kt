@@ -3,6 +3,7 @@ package cr.ac.una.paninisupport.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import cr.ac.una.paninisupport.domain.repository.TicketRepository
+import cr.ac.una.paninisupport.ui.tickets.create.CreateTicketViewModel
 import cr.ac.una.paninisupport.ui.tickets.detail.TicketDetailViewModel
 import cr.ac.una.paninisupport.ui.tickets.list.TicketListViewModel
 
@@ -17,6 +18,8 @@ class TicketViewModelFactory(
                 TicketListViewModel(ticketRepository) as T
             modelClass.isAssignableFrom(TicketDetailViewModel::class.java) ->
                 TicketDetailViewModel(ticketRepository) as T
+            modelClass.isAssignableFrom(CreateTicketViewModel::class.java) ->
+                CreateTicketViewModel(ticketRepository) as T
             else -> throw IllegalArgumentException(
                 "Unknown ViewModel class: ${modelClass.name}"
             )
